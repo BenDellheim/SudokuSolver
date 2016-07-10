@@ -6,16 +6,19 @@
  */
 package sat.formula;
 
-import immutable.ImList;
-
+import immutable.*;
 import java.util.Iterator;
-
 import sat.env.Variable;
 
 /**
- * Formula represents an immutable boolean formula in
- * conjunctive normal form, intended to be solved by a
- * SAT solver.
+ * Formula represents an immutable boolean formula in conjunctive normal form,
+ * intended to be solved by an SAT solver.
+ * 
+ * Formula contains an ImList of Clause, which are considered ANDed together.
+ * Clause  contains an ImList of Literal, which are considered ORed together.
+ * Literal is abstracted into PosLiteral and NegLiteral, and is akin to variables like x1' or x2.
+ * It's similar to a "system of equations" in algebra, where we're solving for the variables.
+ * Only, the variables are all either true or false.
  */
 public class Formula {
     private final ImList<Clause> clauses;
@@ -46,9 +49,7 @@ public class Formula {
      * @return the true problem
      */
     public Formula() {
-
-        // TODO: implement this.
-        throw new RuntimeException("not yet implemented.");
+    	clauses = new EmptyImList<Clause>();
     }
 
     /**
@@ -58,8 +59,7 @@ public class Formula {
      * @return the problem with a single clause containing the literal l
      */
     public Formula(Variable l) {
-        // TODO: implement this.
-        throw new RuntimeException("not yet implemented.");
+    	clauses = new NonEmptyImList<Clause>(new Clause(PosLiteral.make(l)));
     }
 
     /**
@@ -68,8 +68,7 @@ public class Formula {
      * @return the problem with a single clause c
      */
     public Formula(Clause c) {
-        // TODO: implement this.
-        throw new RuntimeException("not yet implemented.");
+    	clauses = new NonEmptyImList<Clause>(c);
     }
 
     /**
@@ -78,8 +77,12 @@ public class Formula {
      * @return a new problem with the clauses of this, but c added
      */
     public Formula addClause(Clause c) {
-        // TODO: implement this.
-        throw new RuntimeException("not yet implemented.");
+    	/* A Formula contains the immutable container "ImList<Clause> clauses".
+    	/* I can get an ImList with c added; that's just "clauses.add(c)".
+    	 * But, the return type is Formula, and Formula only has constructors for
+    	 * (), (Variable), and (Clause).
+    	 */
+    	return new Formula(clauses.add(c));
     }
 
     /**

@@ -1,5 +1,6 @@
 package sudoku;
 
+import java.io.*;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
@@ -19,9 +20,15 @@ public class SudokuTest {
     			           {0,0,3,1,0}};
     	Sudoku emptyPuzzle = new Sudoku(dim);
     	Sudoku puzzle1 = new Sudoku(dim, square);
-    	System.out.println(puzzle1.toString());
+//    	System.out.println(puzzle1.toString());
     	Sudoku puzzle2 = new Sudoku(dim, square2);
-    	System.out.println(puzzle2.toString());
+//    	System.out.println(puzzle2.toString());
+    	try{
+    		Sudoku puzzle3 = Sudoku.fromFile(2, "samples\\sudoku_5x5.txt");
+    		System.out.println(puzzle3.toString());
+    	}
+    	catch(IOException s){;}
+    	catch(Sudoku.ParseException s){;}
     }
     
 }

@@ -63,7 +63,7 @@ public class Clause implements Iterable<Literal> {
     }
 
     /**
-     * @return a clause contain a single literal
+     * @return a clause containing a single literal
      */
     public Clause(Literal literal) {
         this(new NonEmptyImList<Literal>(literal));
@@ -169,6 +169,9 @@ public class Clause implements Iterable<Literal> {
         if (literals.isEmpty()) return literals;
         Literal first = literals.first();
         ImList<Literal> rest = literals.rest();
+   
+        // Clauses are ORed together, so if one literal is true the whole clause is true.
+        // If the literal is negated, False OR Anything is still Anything, so we return "rest".
         if (first.equals(l)) return null;
         else if (first.equals(l.getNegation())) return rest;
         else {

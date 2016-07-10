@@ -6,7 +6,7 @@
  */
 package sudoku;
 
-import java.io.IOException;
+import java.io.*;
 
 import sat.env.Environment;
 import sat.env.Variable;
@@ -44,7 +44,7 @@ public class Sudoku {
     		for( int j = 0; j < square.length; j++)
     		{
     			assert (0 <= square[i][j]) && (square[i][j] <= size):
-    				"Square[" + i + "][" + j + "]'s value must be between 0 and " + size + ".";
+    				"Square[" + i + "][" + j + "]'s value must be between 0 and " + size + ". Value was " + square[i][j];
     		}
     	}
     	assert occupies.length == size + 1: "Occupies must have size+1 length. Remember, indexing starts from 1.";
@@ -114,24 +114,101 @@ public class Sudoku {
      * Reads in a file containing a Sudoku puzzle.
      * 
      * @param dim
-     *            Dimension of puzzle. Requires: at most dim of 3, because
-     *            otherwise need different file format
+     *            Dimension of puzzle. Requires: 2 for a 4x4, or 3 for a 9x9.
+     *            These are the only two sizes supported.
      * @param filename
      *            of file containing puzzle. The file should contain one line
-     *            per row, with each square in the row represented by a digit,
-     *            if known, and a period otherwise. With dimension dim, the file
-     *            should contain dim*dim rows, and each row should contain
-     *            dim*dim characters.
+     *            per row, with each square in the row represented by a digit
+     *            (if known) or a '.' otherwise. (The periods are converted to zeros.)
+     *            The file should contain dim*dim rows, and each row should contain dim*dim characters.
+     *            
+     *            NOTE: There is support for puzzles with an extra row/column
+     *            so their indexes can start at 1 not 0.
+     *            I.E. if for a 9x9 puzzle the file has 10x10 entries, the first row/column will be ignored
+     *            and the rest will be used for the 9x9 puzzle.
      * @return Sudoku object corresponding to file contents
      * @throws IOException
      *             if file reading encounters an error
      * @throws ParseException
      *             if file has error in its format
      */
-    public static Sudoku fromFile(int dim, String filename) throws IOException,
-            ParseException {
-        // TODO: implement this.
-        throw new RuntimeException("not yet implemented.");
+    public static Sudoku fromFile(int dim, String filename) throws IOException, ParseException {
+        if(!(dim == 2 || dim == 3)){throw new ParseException("Invalid dim. Only values 2 or 3 are compatible.");}
+    	try(
+    			FileReader fr = new FileReader(filename);
+            	BufferedReader br = new BufferedReader(fr);)
+        {
+        	String line;
+        	int puzzleLength, buffer;
+        	int[][] newPuzzle = new int[dim*dim+1][dim*dim+1];
+        	
+        	/* Priming the loop with a check for file type.
+        	 * This block initializes the flag "buffer", which tells me whether or not to
+        	 * skip the first row/column. (I add a "0" to row/column 0 to make indexing easier.
+        	 * This checks if the file was saved that way or not.)
+        	 * 
+        	 * If the later rows aren't the same length (this is actually valid for Java arrays),
+        	 * I'll throw a ParseException.
+        	 */
+        	line = br.readLine();
+        	puzzleLength = line.length();
+        	if( puzzleLength == dim * dim)
+        	{
+        		buffer = 0;
+        		// Loop once to add primed row (ROW 1) to newPuzzle
+        		for(int col = 0; col < line.length(); col++)
+        		{
+        			char s = line.charAt(col);
+        			if(Character.isDigit(s))
+        			{
+        				newPuzzle[1][col+1] = s - '0';
+        			}
+        			else if(s == '.')
+        			{
+        				newPuzzle[1][col+1] = 0;
+        			}
+        			else
+        			{
+        				throw new ParseException("Invalid character in " + filename);
+        			}
+            	}
+        	}
+        	else if( puzzleLength == dim * dim + 1){ buffer = 1;} // No need in adding a zero row
+        	else throw new ParseException("Invalid row size in " + filename + "; must be " + dim*dim + " or " + dim*dim+1);
+
+        	
+        	// Main loop to read Sudoku from file.
+        	// The first row of the puzzle is stored to index "1", so if buffer == 0 we're on row 2
+        	// (row 1 was stored in the last step), and if buffer == 1 we're on row 1 (because it skipped a buffer row).
+        	for(int row = 2-buffer; (line = br.readLine()) != null; row++)
+        	{
+        		if( line.length() != puzzleLength) throw new ParseException("Invalid row size.");
+        		
+        		// Start at 0 if no buffer column; start at 1 if there is one.
+            	for(int col = buffer; col < line.length(); col++)
+            	{
+            		char s = line.charAt(col);
+            		if(Character.isDigit(s))
+            		{
+            			newPuzzle[row][col+1-buffer] = s - '0';
+            		}
+            		else if( s == '.')
+            		{
+            			newPuzzle[row][col+1-buffer] = 0;
+            		}
+            		else
+            		{
+            			throw new ParseException("Invalid character in " + filename + " at (" + row + ", " + col + ").");
+            		}
+            	}
+        		
+        	}
+        	return new Sudoku(dim, newPuzzle);
+        	
+        }
+        catch(IOException s){System.out.println("Error opening file.");}
+        catch(ParseException s){}
+    	return new Sudoku(dim); // Returns empty puzzle if there's an error
     }
 
     /**
@@ -157,9 +234,9 @@ public class Sudoku {
     public String toString() {
     	checkRep();
     	String puzzle = "";
-    	for(int i = 1; i <= size; i++)
+    	for(int i = 0; i <= size; i++)
     	{
-    		for(int j = 1; j <= size; j++)
+    		for(int j = 0; j <= size; j++)
     		{
     			if(square[i][j] == 0)
     			{
