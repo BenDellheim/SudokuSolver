@@ -16,7 +16,7 @@ import java.util.Iterator;
  * A clause is an immutable set of literals that does not contain
  * a literal and its negation.
  * 
- * Note: reduce returns null; a questionnable design decision
+ * Note: reduce returns null; a questionable design decision
  */
 public class Clause implements Iterable<Literal> {
     private final ImList<Literal> literals;
@@ -51,7 +51,7 @@ public class Clause implements Iterable<Literal> {
             Literal first = ls.first();
             assert first != null : "Clause, Rep invariant: no null elements";
             ImList<Literal> rest = ls.rest();
-            assert !rest.contains(first) : "Clause, Rep invariant: no dups";
+            assert !rest.contains(first) : "Clause, Rep invariant: no dupes";
             assert !rest.contains(first.getNegation()) : "Clause, Rep invariant: no literal and its negation";
             checkRep (rest);
         }        
@@ -125,7 +125,9 @@ public class Clause implements Iterable<Literal> {
      */
     public Clause add(Literal l) {
         if (literals.contains(l)) return this;
+//        System.out.println("Doesn't contain l");
         if (literals.contains(l.getNegation())) return null;
+//        System.out.println("Doesn't contain ~l");
         return new Clause(literals.add(l));
     }
 

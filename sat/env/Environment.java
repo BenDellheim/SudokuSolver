@@ -60,7 +60,7 @@ public class Environment {
 
     /**
      * @return the boolean value that v is bound to, or
-     * the special UNDEFINED value of it is not bound
+     * the special UNDEFINED value if it is not bound
      */
     public Bool get(Variable v){
         Bool b = bindings.get(v);

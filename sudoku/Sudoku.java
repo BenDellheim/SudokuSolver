@@ -10,7 +10,7 @@ import java.io.*;
 
 import sat.env.Environment;
 import sat.env.Variable;
-import sat.formula.Formula;
+import sat.formula.*;
 
 /**
  * Sudoku is an immutable abstract datatype representing instances of Sudoku.
@@ -82,7 +82,8 @@ public class Sudoku {
      *            blank, else i to represent the digit i. 
      *            
      *            THE FIRST ROW + COLUMN ARE IGNORED! I made indexing start from 1, not 0.
-     *            This makes indexing MUCH easier to read and troubleshoot later.
+     *            This makes indexing MUCH easier to read and troubleshoot later, at the cost
+     *            of a more confusing setup.
      *            
      *            So { { 0,0,0,0,0 }, 
      *                 { 0,0,0,0,1 },
@@ -249,16 +250,274 @@ public class Sudoku {
     	checkRep();
     	return puzzle;
     }
+    
+    /**
+     * Helper function for getProblem(); used as a parameter for PosLiteral.make().
+     * @param i row
+     * @param j column
+     * @param k value
+     * @return the variable name for the literal
+     */
+    private String literalString(int i, int j, int k) {
+		return "occupies(" +
+               Integer.toString(i) + ", " +
+               Integer.toString(j) + ", " +
+               Integer.toString(k)+ ")";
+    }
 
     /**
      * @return a SAT problem corresponding to the puzzle, using variables with
      *         names of the form occupies(i,j,k) to indicate that the kth symbol
      *         occupies the entry in row i, column j
+     * @throws ParseException
+     *             if a dim other than 2 or 3 is used
      */
-    public Formula getProblem() {
+    public Formula getProblem() throws ParseException {
+    	// int dim, int size
+    	// int square[][] (size+1)
+    	// Variable occupies[][][] (size+1)
+        if(!(dim == 2 || dim == 3)){throw new ParseException("Invalid dim. Only values 2 or 3 are compatible.");}
 
-        // TODO: implement this.
-        throw new RuntimeException("not yet implemented.");
+    	checkRep();
+    	Formula newProblem = new Formula();
+    	// 1. Solution must be consistent with the starting grid.
+    	// For every entry (already-filled square) in square[][], produce a clause. (81 max for a 9x9)
+    	for(int i = 1; i <= size; i++)
+    	{
+    		for(int j = 1; j <= size; j++)
+    		{
+    			int k = square[i][j];
+    			if(k > 0)
+    			{
+    				PosLiteral l = PosLiteral.make(literalString(i,j,k));
+    				newProblem = newProblem.addClause(new Clause(l));
+    				occupies[i][j][k] = l.getVariable();
+    			}
+    		}
+    	}
+    	
+    	// 2. At most ONE DIGIT per square! (2,754 clauses for a 9x9 puzzle!)
+    	for(int i = 1; i <= size; i++)
+    	{
+    		for(int j = 1; j <= size; j++)
+    		{
+    			/* For EACH CELL in the puzzle (hence the above for() loops), we need to make a set of clauses.
+    			 * We have to loop through every pair of numbers, i.e. (1,2), (1,3), (1,4), (2,3), (2,4).
+    			 * For EVERY PAIR k1/k2, we add the clause (NOT v[i][j][k1] or NOT v[i][j][k2]).
+    			 * This logic prevents both pairs from being true at the same time.
+    			 * IOW: If there's a digit in a cell, this prevents any other digit from being there.
+    			 */
+    			for(int k1 = 1; k1 < size; k1++)
+    			{
+    				for(int k2 = k1+1; k2 <= size; k2++)
+    				{
+        				PosLiteral L1 = PosLiteral.make(literalString(i,j,k1));
+        				PosLiteral L2 = PosLiteral.make(literalString(i,j,k2));
+    					newProblem = newProblem.addClause(new Clause(L1.getNegation()).add(L2.getNegation()));
+    				}
+    			}
+    		}
+    	}
+    	
+    	// 3. In each ROW "i", each DIGIT "k" must appear exactly once.
+    	for(int i = 1; i <= size; i++)
+    	{
+    		for(int k = 1; k <= size; k++)
+    		{
+    			// First, we add a clause that guarantees the digit to appear AT LEAST once in this row.
+    			// For each row i and digit k: (v[i][1][k] or v[i][2][k] or v[i][3][k]...)
+    			// IOW: 1... or .1.. or ..1. or ...1 for every row and every number. Yeah it's a lot of clauses x.x
+				Clause tempClause = new Clause();
+    			for(int j = 1; j <= size; j++)
+    			{
+    				PosLiteral l = PosLiteral.make(literalString(i,j,k));
+    				tempClause = tempClause.add(l); // Remember, adding to a clause is the same as ORing the literals
+    			}
+    			newProblem = newProblem.addClause(tempClause);
+
+    			
+    			/* ALSO within the ROW, we get to add the tricky loop again! Phew, here goes...
+    			 * Same as part 2, only this time we're iterating through the middle value (j).
+    			 * 
+    			 * We need to make sure the current number (k) only appears ONCE in this row.
+    			 * To do this, we take every pair of cells (j1/j2) in this row,
+    			 * and add the clause (NOT v[i][j1][k] or NOT v[i][j2][k]) -- see part 2 above for details.
+    			 * For example, the number 2 can be in ONE of (1st or 2nd), (1st or 3rd), (1st or 4th), (2nd or 3rd), (2nd or 4th), etc.
+    			 */
+    			for(int j1 = 1; j1 < size; j1++)
+    			{
+    				for(int j2 = j1+1; j2 <= size; j2++)
+    				{
+        				PosLiteral L1 = PosLiteral.make(literalString(i,j1,k));
+        				PosLiteral L2 = PosLiteral.make(literalString(i,j2,k));
+    					newProblem = newProblem.addClause(new Clause(L1.getNegation()).add(L2.getNegation()));
+    				}
+    			}
+    		}
+    	}
+    	
+    	// 4. In each COLUMN "j", each DIGIT "k" must appear exactly once.
+    	// Exactly the same as part 3, only checking vertically instead of horizontally. (So, i/j swap)
+    	for(int j = 1; j <= size; j++)
+    	{
+    		for(int k = 1; k <= size; k++)
+    		{
+    			/* First, we add a clause that guarantees the digit to appear AT LEAST once in this column.
+    			 * For each column j and digit k: (v[1][j][k] or v[2][j][k] or v[3][j][k]...)
+    			 * IOW: 1  or  .  or  .  or  .
+    			 *      .      1      .      .
+    			 *      .      .      1      .
+    			 *      .      .      .      1
+    			 * for every column and every number. Yeah it's a lot of clauses x.x
+    			 */
+				Clause tempClause = new Clause();
+    			for(int i = 1; i <= size; i++)
+    			{
+    				PosLiteral l = PosLiteral.make(literalString(i,j,k));
+    				tempClause = tempClause.add(l); // Remember, adding to a clause is the same as ORing the literals
+    			}
+    			newProblem = newProblem.addClause(tempClause);
+
+    			
+    			/* ALSO within the COLUMN, we get to add the tricky loop again! Phew, here goes...
+    			 * Same as part 2, only this time we're iterating through the first value (i).
+    			 * 
+    			 * We need to make sure the current number (k) only appears ONCE in this column.
+    			 * To do this, we take every pair of cells (i1/i2) in this column,
+    			 * and add the clause (NOT v[i1][j][k] or NOT v[i2][j][k]) -- see part 2 above for details.
+    			 * For example, the number 2 can be in ONE of (1st or 2nd), (1st or 3rd), (1st or 4th), (2nd or 3rd), (2nd or 4th), etc.
+    			 */
+    			for(int i1 = 1; i1 < size; i1++)
+    			{
+    				for(int i2 = i1+1; i2 <= size; i2++)
+    				{
+        				PosLiteral L1 = PosLiteral.make(literalString(i1,j,k));
+        				PosLiteral L2 = PosLiteral.make(literalString(i2,j,k));
+    					newProblem = newProblem.addClause(new Clause(L1.getNegation()).add(L2.getNegation()));
+    				}
+    			}
+    		}
+    	}
+    	
+    	// 5. In each BLOCK, each digit must appear exactly once.
+    	// 
+    	// ...*sigh*
+    	// Okay, this part is tricky enough that I'm just gonna hard-code it.
+    	// If you want to implement this class for dim 4 or higher (16x16+ Sudokus), you'll have to modify this section.
+    	// Looping through each block, and then each value in each block is NOT pretty in for() loops.
+    	
+    	if(dim == 3)
+    	{
+    		// Each digit must appear exactly once in its 3x3 block
+    		// Add a clause for each digit being ORed in its respective block
+    		Clause tempClause = new Clause();
+			for(int a = 0; a < size; a+= 3){ // Adds 0, 3, 6
+			for(int b = 0; b < size; b+= 3){ // Adds 0, 3, 6
+			for(int k = 1; k <= size; k++){
+				tempClause = tempClause.add(PosLiteral.make(literalString(1+a,1+b,k)))
+						               .add(PosLiteral.make(literalString(1+a,2+b,k)))
+						               .add(PosLiteral.make(literalString(1+a,3+b,k)))
+						               .add(PosLiteral.make(literalString(2+a,1+b,k)))
+						               .add(PosLiteral.make(literalString(2+a,2+b,k)))
+						               .add(PosLiteral.make(literalString(2+a,3+b,k)))
+						               .add(PosLiteral.make(literalString(3+a,1+b,k)))
+						               .add(PosLiteral.make(literalString(3+a,2+b,k)))
+						               .add(PosLiteral.make(literalString(3+a,3+b,k)));
+    			newProblem = newProblem.addClause(tempClause);
+			}}}
+
+			
+			// For each PAIR of cells in each block, each can only have the digit once. (See part 2)
+			// Add a clause for each pair: (NOT v[i1][j1][k] or NOT v[i2][j2][k])
+			// There's... PROBABLY an easier way to write this, but whatever. It's only done once.
+			for( int a = 0; a < size; a+= 3){ // Adds 0, 3, 6
+			for( int b = 0; b < size; b+= 3){ // Adds 0, 3, 6
+			for( int k = 1; k<= size; k++){
+				PosLiteral L1 = PosLiteral.make(literalString(1+a,1+b,k));
+				PosLiteral L2 = PosLiteral.make(literalString(1+a,2+b,k));
+				PosLiteral L3 = PosLiteral.make(literalString(1+a,3+b,k));
+				PosLiteral L4 = PosLiteral.make(literalString(2+a,1+b,k));
+				PosLiteral L5 = PosLiteral.make(literalString(2+a,2+b,k));
+				PosLiteral L6 = PosLiteral.make(literalString(2+a,3+b,k));
+				PosLiteral L7 = PosLiteral.make(literalString(3+a,1+b,k));
+				PosLiteral L8 = PosLiteral.make(literalString(3+a,2+b,k));
+				PosLiteral L9 = PosLiteral.make(literalString(3+a,3+b,k));
+				newProblem = newProblem.addClause(new Clause(L1.getNegation()).add(L2.getNegation()))
+				                       .addClause(new Clause(L1.getNegation()).add(L3.getNegation()))
+				                       .addClause(new Clause(L1.getNegation()).add(L4.getNegation()))
+				                       .addClause(new Clause(L1.getNegation()).add(L5.getNegation()))
+				                       .addClause(new Clause(L1.getNegation()).add(L6.getNegation()))
+				                       .addClause(new Clause(L1.getNegation()).add(L7.getNegation()))
+				                       .addClause(new Clause(L1.getNegation()).add(L8.getNegation()))
+				                       .addClause(new Clause(L1.getNegation()).add(L9.getNegation()))
+	                                   .addClause(new Clause(L2.getNegation()).add(L3.getNegation()))
+				                       .addClause(new Clause(L2.getNegation()).add(L4.getNegation()))
+				                       .addClause(new Clause(L2.getNegation()).add(L5.getNegation()))
+				                       .addClause(new Clause(L2.getNegation()).add(L6.getNegation()))
+                                       .addClause(new Clause(L2.getNegation()).add(L7.getNegation()))
+				                       .addClause(new Clause(L2.getNegation()).add(L8.getNegation()))
+				                       .addClause(new Clause(L2.getNegation()).add(L9.getNegation()))
+				                       .addClause(new Clause(L3.getNegation()).add(L4.getNegation()))
+				                       .addClause(new Clause(L3.getNegation()).add(L5.getNegation()))
+				                       .addClause(new Clause(L3.getNegation()).add(L6.getNegation()))
+				                       .addClause(new Clause(L3.getNegation()).add(L7.getNegation()))
+				                       .addClause(new Clause(L3.getNegation()).add(L8.getNegation()))
+				                       .addClause(new Clause(L3.getNegation()).add(L9.getNegation()))
+				                       .addClause(new Clause(L4.getNegation()).add(L5.getNegation()))
+				                       .addClause(new Clause(L4.getNegation()).add(L6.getNegation()))
+				                       .addClause(new Clause(L4.getNegation()).add(L7.getNegation()))
+				                       .addClause(new Clause(L4.getNegation()).add(L8.getNegation()))
+				                       .addClause(new Clause(L4.getNegation()).add(L9.getNegation()))
+				                       .addClause(new Clause(L5.getNegation()).add(L6.getNegation()))
+				                       .addClause(new Clause(L5.getNegation()).add(L7.getNegation()))
+				                       .addClause(new Clause(L5.getNegation()).add(L8.getNegation()))
+				                       .addClause(new Clause(L5.getNegation()).add(L9.getNegation()))
+				                       .addClause(new Clause(L6.getNegation()).add(L7.getNegation()))
+				                       .addClause(new Clause(L6.getNegation()).add(L8.getNegation()))
+				                       .addClause(new Clause(L6.getNegation()).add(L9.getNegation()))
+				                       .addClause(new Clause(L7.getNegation()).add(L8.getNegation()))
+				                       .addClause(new Clause(L7.getNegation()).add(L8.getNegation()))
+				                       .addClause(new Clause(L8.getNegation()).add(L9.getNegation()));
+			}}}
+			
+    	}
+    	else
+    	{
+    		// dim == 2
+    		// Each digit must appear exactly once in its 2x2 block
+    		// Add a clause for each digit being ORed in its respective block
+			Clause tempClause = new Clause();
+			for( int a = 0; a < size; a+= 2){ // Adds 0, 2
+			for( int b = 0; b < size; b+= 2){ // Adds 0, 2
+			for( int k = 1; k <= size; k++)
+			{
+				tempClause = tempClause.add(PosLiteral.make(literalString(1+a,1+b,k)))
+			                           .add(PosLiteral.make(literalString(1+a,2+b,k)))
+  			                           .add(PosLiteral.make(literalString(2+a,1+b,k)))
+			                           .add(PosLiteral.make(literalString(2+a,2+b,k)));
+				newProblem = newProblem.addClause(tempClause);
+			}}}
+			
+			// For each PAIR of cells in each 2x2 block, each digit must appear once.
+			// Add a clause for each pair: (NOT v[i1][j1][k] or NOT v[i2][j2][k])
+			for( int a = 0; a < size; a+= 2){ // Adds 0, 2
+			for( int b = 0; b < size; b+= 2){ // Adds 0, 2
+			for( int k = 1; k<= size; k++){
+				PosLiteral L1 = PosLiteral.make(literalString(1+a,1+b,k));
+				PosLiteral L2 = PosLiteral.make(literalString(1+a,2+b,k));
+				PosLiteral L3 = PosLiteral.make(literalString(2+a,1+b,k));
+				PosLiteral L4 = PosLiteral.make(literalString(2+a,2+b,k));
+				newProblem = newProblem.addClause(new Clause(L1.getNegation()).add(L2.getNegation()))
+				                       .addClause(new Clause(L1.getNegation()).add(L3.getNegation()))
+				                       .addClause(new Clause(L1.getNegation()).add(L4.getNegation()))
+				                       .addClause(new Clause(L2.getNegation()).add(L3.getNegation()))
+				                       .addClause(new Clause(L2.getNegation()).add(L4.getNegation()))
+				                       .addClause(new Clause(L3.getNegation()).add(L4.getNegation()));
+			}}}
+			
+    	}
+
+    	return newProblem;
     }
 
     /**

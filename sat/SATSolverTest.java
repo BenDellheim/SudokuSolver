@@ -4,7 +4,11 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
+import sat.env.Bool;
+import sat.env.Environment;
+import sat.env.Variable;
 import sat.formula.Clause;
+import sat.formula.Formula;
 import sat.formula.Literal;
 import sat.formula.PosLiteral;
 
@@ -24,7 +28,35 @@ public class SATSolverTest {
         assert false;
     }
 
-    // TODO: put your test cases here
+    @Test
+    public void testSolve() {
+    	Clause c1 = new Clause(a).add(nb);
+    	Clause c2 = new Clause(a).add(b);
+    	Clause c3 = new Clause(a);
+    	Clause c4 = new Clause(b);
+    	Clause c5 = new Clause(nb);
+    	Clause c6 = new Clause(c);
+    	//(a | ~b) & (a | b)
+    	//Should return a: True, b: anything
+    	Formula f1 = new Formula(c1).addClause(c2);
+    	
+    	//(a & b) & (a & ~b)
+    	//Should return: null
+    	Formula f2 = new Formula(c3).addClause(c4).and(
+    			     new Formula(c3).addClause(c5));
+
+    	//(a & b) & (~b | c)
+    	//Should return: a: True, b: True, c: True
+    	Formula f3 = new Formula(c3).addClause(c4).and(
+    			     new Formula(c5).or(new Formula(c6)));
+    	
+    	Environment solution = new Environment();
+		Literal lit = c5.chooseLiteral();
+		Variable var = lit.getVariable();
+		System.out.println(f3);
+		SATSolver.solve(f3);
+    }
+    
 
     
 }

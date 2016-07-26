@@ -50,6 +50,7 @@ public class Formula {
      */
     public Formula() {
     	clauses = new EmptyImList<Clause>();
+    	checkRep();
     }
 
     /**
@@ -60,6 +61,7 @@ public class Formula {
      */
     public Formula(Variable l) {
     	clauses = new NonEmptyImList<Clause>(new Clause(PosLiteral.make(l)));
+    	checkRep();
     }
 
     /**
@@ -69,30 +71,31 @@ public class Formula {
      */
     public Formula(Clause c) {
     	clauses = new NonEmptyImList<Clause>(c);
+    	checkRep();
     }
 
+    public Formula(ImList<Clause> c) {
+        clauses = c;
+        checkRep();
+    }
+
+    
     /**
      * Add a clause to this problem
      * 
      * @return a new problem with the clauses of this, but c added
      */
     public Formula addClause(Clause c) {
-    	/* A Formula contains the immutable container "ImList<Clause> clauses".
-    	/* I can get an ImList with c added; that's just "clauses.add(c)".
-    	 * But, the return type is Formula, and Formula only has constructors for
-    	 * (), (Variable), and (Clause).
-    	 */
     	return new Formula(clauses.add(c));
     }
 
-    /**
+	/**
      * Get the clauses of the formula.
      * 
      * @return list of clauses
      */
     public ImList<Clause> getClauses() {
-        // TODO: implement this.
-        throw new RuntimeException("not yet implemented.");
+    	return clauses;
     }
 
     /**
@@ -102,34 +105,60 @@ public class Formula {
      *         order
      */
     public Iterator<Clause> iterator() {
-        // TODO: implement this.
-        throw new RuntimeException("not yet implemented.");
+    	return clauses.iterator();
     }
 
     /**
+     * ANDs two formulas and returns the result.
+     * Both formulas' clause lists are concatenated, since they are implicitly ANDed already.
      * @return a new problem corresponding to the conjunction of this and p
      */
     public Formula and(Formula p) {
-        // TODO: implement this.
-        throw new RuntimeException("not yet implemented.");
+    	ImList<Clause> resultList = clauses;
+    	Iterator<Clause> list = p.clauses.iterator();
+    	while(list.hasNext())
+    	{
+    		resultList = resultList.add(list.next());
+    	}
+    	
+    	return new Formula(resultList);
     }
 
     /**
+     * ORs two formulas and returns the result.
+     * This makes the formula no longer in Conjunctive Normal Form, so we
+     * have to use the distributive law to convert back to CNF.
+     * I.E. for Formula1 (x1 & x2) OR Formula2 (y1 & y2),
+     * result Formula3 will be (x1 | y1) & (x1 | y2) & (x2 | y1) & (x2 | y2)
+	 * or in terms of Clauses, (x1,y1) & (x1,y2) & (x2,y1) & (x2,y2).
+	 * NOTE: I corrected this comment after some research. They were WRONG! =)
      * @return a new problem corresponding to the disjunction of this and p
      */
     public Formula or(Formula p) {
-        // TODO: implement this.
-        // Hint: you'll need to use the distributive law to preserve conjunctive normal form, i.e.:
-        //   to do (a & b) .or (c & d),
-        //   you'll need to make (a | b) & (a | c) & (b | c) & (b | d)        
-        throw new RuntimeException("not yet implemented.");
+    	ImList<Clause> returnList = new EmptyImList<Clause>();
+    	Clause left;
+    	Iterator<Clause> list1 = this.clauses.iterator();
+    	while(list1.hasNext())
+    	{
+    		left = list1.next();
+        	Iterator<Clause> list2 = p.clauses.iterator();
+    		while(list2.hasNext())
+    		{
+    			Clause right = list2.next();
+    			Clause tempClause;
+    			tempClause = left.merge(right);
+    			if(tempClause.isEmpty()) return null;
+    			else returnList = returnList.add(tempClause);
+    		}
+    		
+    	}
+    	return new Formula(returnList);
     }
 
     /**
      * @return a new problem corresponding to the negation of this
      */
     public Formula not() {
-        // TODO: implement this.
         // Hint: you'll need to apply DeMorgan's Laws (http://en.wikipedia.org/wiki/De_Morgan's_laws)
         // to move the negation down to the literals, and the distributive law to preserve 
         // conjunctive normal form, i.e.:
@@ -137,7 +166,31 @@ public class Formula {
         //   you'll need to make !((a | b) & c) 
         //                       => (!a & !b) | !c            (moving negation down to the literals)
         //                       => (!a | !c) & (!b | !c)    (conjunctive normal form)
-        throw new RuntimeException("not yet implemented.");
+    	checkRep();
+    	Iterator<Clause> list1 = this.clauses.iterator();
+    	Formula result = new Formula();
+
+    	// Priming the loop
+   		Clause clause1 = list1.next();
+   		Iterator<Literal> literator = clause1.iterator();
+   		while(literator.hasNext())
+   		{
+   			result = result.addClause(new Clause(literator.next().getNegation()));
+   		}
+
+   		// Main loop: calls result.or() with new Formula each time
+   		while(list1.hasNext())
+       	{
+   			Formula nextFormula = new Formula();
+   			Clause clause2 = list1.next();
+   			Iterator<Literal> literator2 = clause2.iterator();
+   			while(literator2.hasNext())
+   			{
+   				nextFormula = nextFormula.addClause(new Clause(literator2.next().getNegation()));
+   			}
+   			result = result.or(nextFormula);
+    	}
+   		return result;    	
     }
 
     /**
@@ -145,8 +198,7 @@ public class Formula {
      * @return number of clauses in this
      */
     public int getSize() {
-        // TODO: implement this.
-        throw new RuntimeException("not yet implemented.");
+    	return clauses.size();
     }
 
     /**

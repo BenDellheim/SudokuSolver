@@ -10,6 +10,7 @@ public class FormulaTest {
     Literal na = a.getNegation();
     Literal nb = b.getNegation();
     Literal nc = c.getNegation();
+//    Clause x3 = new Clause(na).add(nc);
 
     // make sure assertions are turned on!  
     // we don't want to run test cases without assertions too.
@@ -20,7 +21,33 @@ public class FormulaTest {
     }
     
     
-    // TODO: put your test cases here
+    @Test
+    public void testBooleans() {
+        Clause x1 = new Clause(a);
+        Clause x2 = new Clause(nb);
+        Clause x3 = new Clause(nc);
+        Clause x9 = new Clause(a).add(b).add(c);
+        Formula f1 = new Formula(x1);
+        Formula f2 = new Formula(x2).addClause(x3);
+        Formula f5 = new Formula(x9);
+    	System.out.println("f1 = " + f1);
+    	System.out.println("f2 = " + f2);
+
+    	Formula f3 = f1.and(f2);
+    	if(f3 != null)
+    	{
+    		System.out.println("f1 and f2 = " + f3);
+    		System.out.println("!(f1 and f2) = " + f3.not());
+    	}
+    	System.out.println("f5 = " + f5);
+    	System.out.println("!f5 = " + f5.not());
+
+    	Clause x4 = x1.merge(x2);
+    	//    	Formula f4 = f1.or(f2);
+    	if(x4 != null)
+    	{System.out.println("x1.merge(x2) = " + x4);}
+    	
+    }
 
     
     
