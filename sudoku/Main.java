@@ -13,7 +13,7 @@ public class Main {
     /*
      * Uncomment line(s) below to test your implementation! 
      */
-    public static void main (String[] args) {
+    public static void main (String[] args) throws ParseException {
         timedSolve (new Sudoku(2));
 //        timedSolve (new Sudoku(2, new int[][] { 
 //                    new int[] { 0, 1, 0, 4 }, 
@@ -28,12 +28,19 @@ public class Main {
     /**
      * Solve a puzzle and display the solution and the time it took.
      * @param sudoku
+     * @throws ParseException 
      */
-    private static void timedSolve (Sudoku sudoku) {
+    private static void timedSolve (Sudoku sudoku) throws ParseException {
         long started = System.nanoTime();
 
         System.out.println ("Creating SAT formula...");
-        Formula f = sudoku.getProblem();
+        Formula f = new Formula();
+		try {
+			f = sudoku.getProblem();
+		} catch (ParseException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
         
         System.out.println ("Solving...");
         Environment e = SATSolver.solve(f);

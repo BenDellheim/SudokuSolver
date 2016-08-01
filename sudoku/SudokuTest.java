@@ -5,6 +5,8 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
+import sat.formula.Formula;
+import sat.env.*;
 
 public class SudokuTest {
     
@@ -24,9 +26,16 @@ public class SudokuTest {
     	Sudoku puzzle2 = new Sudoku(dim, square2);
 //    	System.out.println(puzzle2.toString());
     	try{
-    		Sudoku puzzle3 = Sudoku.fromFile(2, "samples\\sudoku_5x5.txt");
-    		System.out.println(puzzle3.toString());
-    	}
+    		Sudoku puzzle3 = Sudoku.fromFile(3, "samples\\sudoku_hard2.txt");
+    		Formula problem3 = puzzle3.getProblem();
+    		System.out.println(puzzle3);
+    		    		
+/*    		PrintWriter writer = new PrintWriter("sudoku.log", "UTF-8");
+    		
+    		writer.println("Problem size: " + problem3.getSize());
+    		writer.println(problem3);
+    		writer.close();
+*/    	}
     	catch(IOException s){;}
     	catch(Sudoku.ParseException s){;}
     }

@@ -4,13 +4,10 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
-import sat.env.Bool;
-import sat.env.Environment;
-import sat.env.Variable;
-import sat.formula.Clause;
-import sat.formula.Formula;
-import sat.formula.Literal;
-import sat.formula.PosLiteral;
+import sat.env.*;
+import sat.formula.*;
+import sudoku.*;
+import sudoku.Sudoku.ParseException;
 
 public class SATSolverTest {
     Literal a = PosLiteral.make("a");
@@ -29,7 +26,7 @@ public class SATSolverTest {
     }
 
     @Test
-    public void testSolve() {
+    public void testSolve() throws ParseException {
     	Clause c1 = new Clause(a).add(nb);
     	Clause c2 = new Clause(a).add(b);
     	Clause c3 = new Clause(a);
@@ -51,10 +48,31 @@ public class SATSolverTest {
     			     new Formula(c5).or(new Formula(c6)));
     	
     	Environment solution = new Environment();
-		Literal lit = c5.chooseLiteral();
+    	solution = solution.putTrue(Sudoku.literalVar(1, 1, 1));
+    	solution = solution.putFalse(Sudoku.literalVar(1, 2, 2));
+    	solution = solution.putTrue(Sudoku.literalVar(1, 3, 3));
+    	solution = solution.putTrue(Sudoku.literalVar(1, 4, 4));
+    	solution = solution.putTrue(Sudoku.literalVar(2, 1, 3));
+    	solution = solution.putTrue(Sudoku.literalVar(2, 2, 2));
+    	solution = solution.putTrue(Sudoku.literalVar(2, 3, 1));
+    	solution = solution.putTrue(Sudoku.literalVar(2, 4, 4));
+    	solution = solution.putTrue(Sudoku.literalVar(3, 1, 3));
+    	solution = solution.putTrue(Sudoku.literalVar(3, 2, 1));
+    	solution = solution.putTrue(Sudoku.literalVar(3, 3, 4));
+    	solution = solution.putTrue(Sudoku.literalVar(3, 4, 2));
+    	solution = solution.putTrue(Sudoku.literalVar(4, 1, 2));
+    	solution = solution.putTrue(Sudoku.literalVar(4, 2, 1));
+    	solution = solution.putTrue(Sudoku.literalVar(4, 3, 4));
+    	solution = solution.putTrue(Sudoku.literalVar(4, 4, 3));
+    	solution = solution.putTrue(Sudoku.literalVar(1, 2, 1));
+
+/*		Literal lit = c5.chooseLiteral();
 		Variable var = lit.getVariable();
-		System.out.println(f3);
-		SATSolver.solve(f3);
+*/		Sudoku s = new Sudoku(2);
+		s = s.interpretSolution(solution);
+		System.out.println(s);
+		
+//		SATSolver.solve(f3);
     }
     
 

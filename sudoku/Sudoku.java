@@ -8,6 +8,7 @@ package sudoku;
 
 import java.io.*;
 
+import sat.env.Bool;
 import sat.env.Environment;
 import sat.env.Variable;
 import sat.formula.*;
@@ -29,11 +30,13 @@ public class Sudoku {
     // occupies [i,j,k] means that kth symbol occupies entry in row i, column j
     private final Variable[][][] occupies;
 
-    // Rep invariant
-    // dim is positive and dim * dim == size
-    // square[][] must have "size+1" dimensions     (Indexing STARTS FROM ONE)
-    // occupies[][][] must have "size+1" dimensions (Indexing STARTS FROM ONE)
-
+    /**
+     * Verifies the Sudoku instance was created properly.
+     * Rep invariant:
+     *  dim is positive and dim * dim == size,
+     *  square[][] must have "size+1" dimensions     (Indexing STARTS FROM ONE),
+     *  occupies[][][] must have "size+1" dimensions (Indexing STARTS FROM ONE)
+     */
     private void checkRep() {
     	assert dim > 0: "Dim must be positive.";
     	assert dim * dim == size: "Size must be the square of Dim.";
@@ -235,9 +238,9 @@ public class Sudoku {
     public String toString() {
     	checkRep();
     	String puzzle = "";
-    	for(int i = 0; i <= size; i++)
+    	for(int i = 1; i <= size; i++)
     	{
-    		for(int j = 0; j <= size; j++)
+    		for(int j = 1; j <= size; j++)
     		{
     			if(square[i][j] == 0)
     			{
@@ -263,6 +266,21 @@ public class Sudoku {
                Integer.toString(i) + ", " +
                Integer.toString(j) + ", " +
                Integer.toString(k)+ ")";
+    }
+
+    /**
+     * Public static version of literalString().
+     * A testing function for making Variables quickly in the JUnit tests.
+     * @param i row
+     * @param j column
+     * @param k value
+     * @return a variable with the name returned by literalString: "occupies(i, j, k)"
+     */
+    public static Variable literalVar(int i, int j, int k) {
+		return new Variable("occupies(" +
+               Integer.toString(i) + ", " +
+               Integer.toString(j) + ", " +
+               Integer.toString(k)+ ")");
     }
 
     /**
@@ -410,10 +428,10 @@ public class Sudoku {
     	{
     		// Each digit must appear exactly once in its 3x3 block
     		// Add a clause for each digit being ORed in its respective block
-    		Clause tempClause = new Clause();
 			for(int a = 0; a < size; a+= 3){ // Adds 0, 3, 6
 			for(int b = 0; b < size; b+= 3){ // Adds 0, 3, 6
 			for(int k = 1; k <= size; k++){
+	    		Clause tempClause = new Clause();
 				tempClause = tempClause.add(PosLiteral.make(literalString(1+a,1+b,k)))
 						               .add(PosLiteral.make(literalString(1+a,2+b,k)))
 						               .add(PosLiteral.make(literalString(1+a,3+b,k)))
@@ -442,42 +460,42 @@ public class Sudoku {
 				PosLiteral L7 = PosLiteral.make(literalString(3+a,1+b,k));
 				PosLiteral L8 = PosLiteral.make(literalString(3+a,2+b,k));
 				PosLiteral L9 = PosLiteral.make(literalString(3+a,3+b,k));
-				newProblem = newProblem.addClause(new Clause(L1.getNegation()).add(L2.getNegation()))
-				                       .addClause(new Clause(L1.getNegation()).add(L3.getNegation()))
-				                       .addClause(new Clause(L1.getNegation()).add(L4.getNegation()))
-				                       .addClause(new Clause(L1.getNegation()).add(L5.getNegation()))
-				                       .addClause(new Clause(L1.getNegation()).add(L6.getNegation()))
-				                       .addClause(new Clause(L1.getNegation()).add(L7.getNegation()))
-				                       .addClause(new Clause(L1.getNegation()).add(L8.getNegation()))
-				                       .addClause(new Clause(L1.getNegation()).add(L9.getNegation()))
-	                                   .addClause(new Clause(L2.getNegation()).add(L3.getNegation()))
-				                       .addClause(new Clause(L2.getNegation()).add(L4.getNegation()))
-				                       .addClause(new Clause(L2.getNegation()).add(L5.getNegation()))
-				                       .addClause(new Clause(L2.getNegation()).add(L6.getNegation()))
-                                       .addClause(new Clause(L2.getNegation()).add(L7.getNegation()))
-				                       .addClause(new Clause(L2.getNegation()).add(L8.getNegation()))
-				                       .addClause(new Clause(L2.getNegation()).add(L9.getNegation()))
-				                       .addClause(new Clause(L3.getNegation()).add(L4.getNegation()))
-				                       .addClause(new Clause(L3.getNegation()).add(L5.getNegation()))
-				                       .addClause(new Clause(L3.getNegation()).add(L6.getNegation()))
-				                       .addClause(new Clause(L3.getNegation()).add(L7.getNegation()))
-				                       .addClause(new Clause(L3.getNegation()).add(L8.getNegation()))
-				                       .addClause(new Clause(L3.getNegation()).add(L9.getNegation()))
-				                       .addClause(new Clause(L4.getNegation()).add(L5.getNegation()))
-				                       .addClause(new Clause(L4.getNegation()).add(L6.getNegation()))
-				                       .addClause(new Clause(L4.getNegation()).add(L7.getNegation()))
-				                       .addClause(new Clause(L4.getNegation()).add(L8.getNegation()))
-				                       .addClause(new Clause(L4.getNegation()).add(L9.getNegation()))
-				                       .addClause(new Clause(L5.getNegation()).add(L6.getNegation()))
-				                       .addClause(new Clause(L5.getNegation()).add(L7.getNegation()))
-				                       .addClause(new Clause(L5.getNegation()).add(L8.getNegation()))
-				                       .addClause(new Clause(L5.getNegation()).add(L9.getNegation()))
-				                       .addClause(new Clause(L6.getNegation()).add(L7.getNegation()))
-				                       .addClause(new Clause(L6.getNegation()).add(L8.getNegation()))
-				                       .addClause(new Clause(L6.getNegation()).add(L9.getNegation()))
-				                       .addClause(new Clause(L7.getNegation()).add(L8.getNegation()))
-				                       .addClause(new Clause(L7.getNegation()).add(L8.getNegation()))
-				                       .addClause(new Clause(L8.getNegation()).add(L9.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L1.getNegation()).add(L2.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L1.getNegation()).add(L3.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L1.getNegation()).add(L4.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L1.getNegation()).add(L5.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L1.getNegation()).add(L6.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L1.getNegation()).add(L7.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L1.getNegation()).add(L8.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L1.getNegation()).add(L9.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L2.getNegation()).add(L3.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L2.getNegation()).add(L4.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L2.getNegation()).add(L5.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L2.getNegation()).add(L6.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L2.getNegation()).add(L7.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L2.getNegation()).add(L8.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L2.getNegation()).add(L9.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L3.getNegation()).add(L4.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L3.getNegation()).add(L5.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L3.getNegation()).add(L6.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L3.getNegation()).add(L7.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L3.getNegation()).add(L8.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L3.getNegation()).add(L9.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L4.getNegation()).add(L5.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L4.getNegation()).add(L6.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L4.getNegation()).add(L7.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L4.getNegation()).add(L8.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L4.getNegation()).add(L9.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L5.getNegation()).add(L6.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L5.getNegation()).add(L7.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L5.getNegation()).add(L8.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L5.getNegation()).add(L9.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L6.getNegation()).add(L7.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L6.getNegation()).add(L8.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L6.getNegation()).add(L9.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L7.getNegation()).add(L8.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L7.getNegation()).add(L9.getNegation()));
+				newProblem = newProblem.addClause(new Clause(L8.getNegation()).add(L9.getNegation()));
 			}}}
 			
     	}
@@ -486,11 +504,11 @@ public class Sudoku {
     		// dim == 2
     		// Each digit must appear exactly once in its 2x2 block
     		// Add a clause for each digit being ORed in its respective block
-			Clause tempClause = new Clause();
 			for( int a = 0; a < size; a+= 2){ // Adds 0, 2
 			for( int b = 0; b < size; b+= 2){ // Adds 0, 2
 			for( int k = 1; k <= size; k++)
 			{
+				Clause tempClause = new Clause();
 				tempClause = tempClause.add(PosLiteral.make(literalString(1+a,1+b,k)))
 			                           .add(PosLiteral.make(literalString(1+a,2+b,k)))
   			                           .add(PosLiteral.make(literalString(2+a,1+b,k)))
@@ -529,10 +547,36 @@ public class Sudoku {
      * @return a new Sudoku grid containing the solution to the puzzle, with no
      *         blank entries.
      */
-    public Sudoku interpretSolution(Environment e) {
+    public Sudoku interpretSolution(Environment e) throws ParseException {
+    	// Uses e.get(Variable) while looping through all values.
+    	// Every TRUE value is added to the Sudoku solution.
 
-        // TODO: implement this.
-        throw new RuntimeException("not yet implemented.");
+    	Sudoku solution = new Sudoku(dim);
+    	for(int i = 1; i<= size; i++)
+    	{
+    		for(int j = 1; j<= size; j++)
+    		{
+    			for(int k = 1; k<= size; k++)
+    			{
+    				Variable v = literalVar(i,j,k);
+    				if(e.get(v) == Bool.TRUE)
+    				{
+    					solution.square[i][j] = k;
+    					solution.occupies[i][j][k] = v;
+    				}
+    			}
+    		}
+    	}
+    	// Final check for any empty values. If found, throw ParseException.
+    	solution.checkRep();
+    	for(int i = 1; i<= size; i++)
+    	{
+    		for(int j = 1; j<= size; j++)
+    		{
+    			if(solution.square[i][j] == 0) throw new ParseException("Solution provided has empty value (" + i + ", " + j + ")");
+    		}
+    	}
+    	return solution;
     }
 
 }

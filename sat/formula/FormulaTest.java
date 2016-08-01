@@ -26,7 +26,7 @@ public class FormulaTest {
         Clause x1 = new Clause(a);
         Clause x2 = new Clause(nb);
         Clause x3 = new Clause(nc);
-        Clause x9 = new Clause(a).add(b).add(c);
+        Clause x9 = make(a,b,c);
         Formula f1 = new Formula(x1);
         Formula f2 = new Formula(x2).addClause(x3);
         Formula f5 = new Formula(x9);
