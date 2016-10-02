@@ -9,20 +9,12 @@ import sudoku.Sudoku.ParseException;
 
 public class Main {
 
-
-    /*
-     * Uncomment line(s) below to test your implementation! 
-     */
     public static void main (String[] args) throws ParseException {
+        timedSolve (new Sudoku(2, new int[][] {{ 0, 1, 0, 4 }, { 0, 0, 0, 0 }, { 2, 0, 3, 0 }, { 0, 0, 0, 0 }}));
         timedSolve (new Sudoku(2));
-//        timedSolve (new Sudoku(2, new int[][] { 
-//                    new int[] { 0, 1, 0, 4 }, 
-//                    new int[] { 0, 0, 0, 0 }, 
-//                    new int[] { 2, 0, 3, 0 }, 
-//                    new int[] { 0, 0, 0, 0 }, 
-//        }));
-//        timedSolveFromFile(3, "samples/sudoku_easy.txt");
-//        timedSolveFromFile(3, "samples/sudoku_hard.txt");        
+        timedSolveFromFile(2, "samples/sudoku_5x5.txt");
+        timedSolveFromFile(3, "samples/sudoku_evil.txt");        
+        timedSolveFromFile(3, "samples/sudoku_hard.txt");
     }
 
     /**
@@ -38,7 +30,6 @@ public class Main {
 		try {
 			f = sudoku.getProblem();
 		} catch (ParseException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
         
@@ -52,7 +43,7 @@ public class Main {
 
         long time = System.nanoTime();
         long timeTaken = (time - started);
-        System.out.println ("Time:" + timeTaken/1000000 + "ms");
+        System.out.println ("Time: " + timeTaken/1000000 + " ms\n");
     }
 
     /**

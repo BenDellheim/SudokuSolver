@@ -109,8 +109,24 @@ public class Sudoku {
     public Sudoku(int dim, int[][] square) {
         this.dim = dim;
         this.size = dim * dim;
-        this.square   = square;
         this.occupies = new Variable[size+1][size+1][size+1];
+        if(dim*dim == square.length)
+        {
+        	// We need to add a leading blank row/column for my internal format
+        	int[][] sq = new int[dim*dim+1][dim*dim+1];
+        	for( int i = 0; i < dim*dim; i++)
+        	{
+        		for( int j = 0; j < dim*dim; j++)
+        		{
+        			sq[i+1][j+1] = square[i][j];
+        		}
+        	}
+        	this.square = sq;
+        }
+        else
+        {
+            this.square = square;
+        }
     	checkRep();
     }
 
@@ -262,10 +278,9 @@ public class Sudoku {
      * @return the variable name for the literal
      */
     private String literalString(int i, int j, int k) {
-		return "occupies(" +
-               Integer.toString(i) + ", " +
-               Integer.toString(j) + ", " +
-               Integer.toString(k)+ ")";
+//		return "occupies(" + Integer.toString(i) + ", " + Integer.toString(j) + ", " + Integer.toString(k)+ ")";
+		return "v" + Integer.toString(i) + Integer.toString(j) + Integer.toString(k);
+
     }
 
     /**
@@ -277,16 +292,13 @@ public class Sudoku {
      * @return a variable with the name returned by literalString: "occupies(i, j, k)"
      */
     public static Variable literalVar(int i, int j, int k) {
-		return new Variable("occupies(" +
-               Integer.toString(i) + ", " +
-               Integer.toString(j) + ", " +
-               Integer.toString(k)+ ")");
+		return new Variable("v" + Integer.toString(i) + Integer.toString(j) + Integer.toString(k));
     }
 
     /**
      * @return a SAT problem corresponding to the puzzle, using variables with
      *         names of the form occupies(i,j,k) to indicate that the kth symbol
-     *         occupies the entry in row i, column j
+     *         occupies the entry in row i, column j. This one's a doozy.
      * @throws ParseException
      *             if a dim other than 2 or 3 is used
      */
@@ -550,7 +562,10 @@ public class Sudoku {
     public Sudoku interpretSolution(Environment e) throws ParseException {
     	// Uses e.get(Variable) while looping through all values.
     	// Every TRUE value is added to the Sudoku solution.
+    	// There SHOULD be only one True value per coordinate, but I check in case of an error.
 
+    	if( e == null) throw new ParseException("Solution not found.");
+    	
     	Sudoku solution = new Sudoku(dim);
     	for(int i = 1; i<= size; i++)
     	{
@@ -561,8 +576,10 @@ public class Sudoku {
     				Variable v = literalVar(i,j,k);
     				if(e.get(v) == Bool.TRUE)
     				{
+    					if(solution.square[i][j] != 0) throw new ParseException("Multiple values found at (" + i + ", " + j + ").");
     					solution.square[i][j] = k;
     					solution.occupies[i][j][k] = v;
+    					break;
     				}
     			}
     		}
