@@ -57,14 +57,12 @@ public class SATSolver {
     		// Recursively call solve().
     		Literal lit = smallest.chooseLiteral();
     		Variable var = lit.getVariable();
+
+    		// Add literal's var to solution
     		if(lit instanceof NegLiteral) 
-    		{
     			solution = solution.putFalse(var);
-    		}
     		else
-    		{
         		solution = solution.putTrue(var);
-    		}
     		ImList<Clause> cList = substitute(clauseList, lit);
     		solution = solve(cList, solution);
     	}
@@ -72,13 +70,29 @@ public class SATSolver {
     	{
     		// No unit Clause
     		// Take the smallest one, try setting it to True and recurse
+    		Environment tempSolution;
     		Literal arbLit = smallest.chooseLiteral();
+    		Variable var = arbLit.getVariable();
+
+    		// Add arbLit's var to solution
+    		if(arbLit instanceof NegLiteral) 
+    			tempSolution = solution.putFalse(var);
+    		else
+        		tempSolution = solution.putTrue(var);
+
     		ImList<Clause> cList = substitute(clauseList, arbLit);
-    		Environment tempSolution = solve(cList, solution);
+    		tempSolution = solve(cList, solution);
     		if(tempSolution == null)
     		{
     			// Dead end when setting to True
     			// Try setting it to False!
+
+    			// Add arbLit's var to solution (this time putTrue and putFalse are swapped!)
+    			if(arbLit instanceof NegLiteral) 
+					tempSolution = solution.putTrue(var);
+				else
+					tempSolution = solution.putFalse(var);
+
     			cList = substitute(clauseList, arbLit.getNegation());
     			tempSolution = solve(cList, solution);
     			if(tempSolution == null)
@@ -88,10 +102,9 @@ public class SATSolver {
     				return null;
     			}
     		}
+    		// Finalize solution; it checks out
     		solution = tempSolution;
     	}
-    	// Not sure about this, but it should come here after finishing recursion and return the solution.
-    	// TODO: Verify the solution will be finalized by this point!
     	return solution;
     }
 
@@ -146,14 +159,13 @@ public class SATSolver {
     		// Recursively call solve().
     		Literal lit = smallest.chooseLiteral();
     		Variable var = lit.getVariable();
+    		
+    		// Add literal's var to solution
     		if(lit instanceof NegLiteral) 
-    		{
     			solution = solution.putFalse(var);
-    		}
     		else
-    		{
-        		solution = solution.putTrue(var);
-    		}
+    			solution = solution.putTrue(var);
+    		
     		ImList<Clause> cList = substitute(clauseList, lit);
     		solution = solve(cList, solution);
     	}
@@ -161,15 +173,29 @@ public class SATSolver {
     	{
     		// No unit Clause
     		// Take the smallest one, try setting it to True and recurse
+    		Environment tempSolution;
     		Literal arbLit = smallest.chooseLiteral();
+    		Variable var = arbLit.getVariable();
+    		
+    		// Add arbLit's var to solution
+    		if(arbLit instanceof NegLiteral) 
+    			tempSolution = solution.putFalse(var);
+    		else
+        		tempSolution = solution.putTrue(var);
     		ImList<Clause> cList = substitute(clauseList, arbLit);
-    		Environment tempSolution = solve(cList, solution);
+    		tempSolution = solve(cList, tempSolution);
     		if(tempSolution == null)
     		{
     			// Dead end when setting to True
     			// Try setting it to False!
+
+    			// Add arbLit's var to solution (this time putTrue and putFalse are swapped!)
+    			if(arbLit instanceof NegLiteral) 
+					tempSolution = solution.putTrue(var);
+				else
+					tempSolution = solution.putFalse(var);
     			cList = substitute(clauseList, arbLit.getNegation());
-    			tempSolution = solve(cList, solution);
+    			tempSolution = solve(cList, tempSolution);
     			if(tempSolution == null)
     			{
     				// False didn't work either
@@ -177,6 +203,7 @@ public class SATSolver {
     				return null;
     			}
     		}
+    		// Finalize solution; it checks out
     		solution = tempSolution;
     	}
     	return solution;
@@ -222,7 +249,6 @@ public class SATSolver {
             }
         	
         }
-//        System.out.println(newList);
         return newList;
     }
 

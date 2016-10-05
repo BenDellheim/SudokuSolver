@@ -12,9 +12,10 @@ public class Main {
     public static void main (String[] args) throws ParseException {
         timedSolve (new Sudoku(2, new int[][] {{ 0, 1, 0, 4 }, { 0, 0, 0, 0 }, { 2, 0, 3, 0 }, { 0, 0, 0, 0 }}));
         timedSolve (new Sudoku(2));
-        timedSolveFromFile(2, "samples/sudoku_5x5.txt");
-        timedSolveFromFile(3, "samples/sudoku_evil.txt");        
-        timedSolveFromFile(3, "samples/sudoku_hard.txt");
+        timedSolveFromFile(2, "samples/sudoku_easy.txt");
+        timedSolveFromFile(3, "samples/sudoku_hard.txt");        
+        timedSolveFromFile(3, "samples/sudoku_hard2.txt");        
+        timedSolveFromFile(3, "samples/sudoku_evil.txt");
     }
 
     /**
